@@ -1,0 +1,8 @@
+fastapi[standard]==0.162.7
+docling==2.150.1
+pypdf==7.1.0
+pydantic==2.14.3
+tiktoken==0.14.0
+pytest==9.2.0
+httpx==0.28.1
+python-multipart==0.0.20

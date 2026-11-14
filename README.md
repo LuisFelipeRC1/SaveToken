@@ -1,225 +1,125 @@
-# SaveToken
+# SaveToken API
 
-> **Status:** Em desenvolvimento
+O SaveToken é uma aplicação web de propósito geral que converte PDFs compatíveis para Markdown, preservando conteúdo e estrutura e oferecendo uma otimização conservadora para facilitar o processamento por ferramentas de inteligência artificial.
 
-## 1. Nome e apresentação do projeto
+O backend usa FastAPI, Docling, pypdf, Pydantic e tiktoken. Não utiliza banco de dados, autenticação, filas ou armazenamento permanente de documentos no MVP.
 
-O **SaveToken** é um projeto open source voltado à conversão de documentos PDF para Markdown (`.md`) com foco em uso técnico por modelos de inteligência artificial.
+## Modos de conversão
 
-## 2. Objetivo e problema que pretende resolver
+- `faithful` (padrão): retorna o Markdown exportado pelo Docling, sem resumo, paráfrase ou limpeza agressiva.
+- `optimized`: parte do mesmo `DoclingDocument`, tenta exportar tabelas compactas e aplica normalização segura de espaço em branco. Um candidato só é aceito quando preserva todos os caracteres não brancos do Markdown fiel e reduz tokens; caso contrário, o Markdown fiel é mantido.
 
-Documentos jurídicos e acadêmicos extensos costumam apresentar ruído de formatação, estrutura inconsistente e alto volume de tokens, dificultando sua utilização em fluxos com IA.
+O SaveToken é genérico para PDFs acadêmicos, científicos, técnicos, empresariais, educacionais, jurídicos e outros documentos compatíveis com o Docling.
 
-O SaveToken busca oferecer um processo transparente para:
-
-- converter PDF em Markdown;
-- preservar estrutura lógica e conteúdo relevante;
-- permitir contagem estimada de tokens antes e depois da otimização.
-
-Público-alvo inicial: estudantes, pesquisadores, desenvolvedores e profissionais que trabalham com documentos longos.
-
-## 3. Funcionalidades planejadas
-
-- Upload de documentos PDF.
-- Conversão de PDF para Markdown.
-- Dois modos de conversão: `faithful` e `optimized`.
-- Download do resultado em arquivo `.md`.
-- Preservação de títulos, parágrafos, artigos, incisos e referências jurídicas.
-- Tratamento de cabeçalhos e rodapés repetitivos.
-- Suporte a documentos acadêmicos e jurídicos extensos.
-- Contagem estimada de tokens.
-- Suporte futuro a múltiplos arquivos por envio.
-- Suporte futuro a divisão de documentos em chunks.
-
-## 4. Tecnologias utilizadas e planejadas
-
-### Backend (este repositório)
-
-- Python 3.12+
-- FastAPI
-- Docling
-- pypdf
-- Pydantic
-- tiktoken
-- pytest
-- Docker
-- Microsoft Azure (hospedagem planejada)
-
-### Frontend (repositório separado)
-
-- Next.js
-- TypeScript
-- SCSS
-- Cloudflare Pages
-
-> Observação: na primeira versão, não há uso planejado de banco de dados.
-
-## 5. Arquitetura e estrutura de diretórios
-
-Estrutura planejada do backend:
+## Estrutura
 
 ```text
-toknix-api/
-├── app/
-│   ├── main.py
-│   ├── api/
-│   │   └── routes/
-│   │       └── conversion.py
-│   ├── models/
-│   │   ├── document.py
-│   │   └── conversion_result.py
-│   ├── schemas/
-│   │   └── conversion.py
-│   ├── services/
-│   │   ├── conversion_service.py
-│   │   ├── pdf_conversion_service.py
-│   │   ├── markdown_optimization_service.py
-│   │   ├── file_validation_service.py
-│   │   └── token_count_service.py
-│   ├── core/
-│   │   └── config.py
-│   └── exceptions/
-│       └── handlers.py
-├── tests/
-├── requirements.txt
-├── Dockerfile
-├── .env.example
-└── README.md
+app/
+├── main.py
+├── api/routes/conversion.py
+├── core/config.py
+├── exceptions/handlers.py
+├── schemas/conversion.py
+└── services/
+    ├── conversion_service.py
+    ├── file_validation_service.py
+    ├── markdown_optimization_service.py
+    ├── pdf_conversion_service.py
+    └── token_count_service.py
+tests/
 ```
 
-### Responsabilidade de cada módulo
+## Requisitos
 
-- `app/main.py`: ponto de entrada da aplicação FastAPI e inicialização do app.
-- `app/api/routes/conversion.py`: definição dos endpoints de conversão.
-- `app/models/`: modelos de domínio usados internamente.
-- `app/schemas/conversion.py`: contratos de entrada/saída para validação e serialização.
-- `app/services/conversion_service.py`: orquestração do fluxo completo de conversão.
-- `app/services/pdf_conversion_service.py`: extração e transformação de conteúdo PDF para Markdown.
-- `app/services/markdown_optimization_service.py`: limpeza e otimização do Markdown para consumo por IA.
-- `app/services/file_validation_service.py`: validação de arquivo (tipo, tamanho e regras iniciais).
-- `app/services/token_count_service.py`: estimativa de tokens por tokenizer/modelo selecionado.
-- `app/core/config.py`: configuração central da aplicação e variáveis de ambiente.
-- `app/exceptions/handlers.py`: tratamento padronizado de erros.
-- `tests/`: testes automatizados.
+- Docker Desktop, recomendado para o ambiente completo.
+- Python 3.12 e pip, apenas se for executar testes ou a API fora do Docker.
 
-## 6. Fluxo de conversão
+O Docling pode carregar dependências e modelos adicionais. Por isso, o primeiro build pode ser grande e demorar. Não é necessário instalar as dependências no host quando a API for executada pelo Docker.
 
-Fluxo planejado de alto nível:
+## Executar com Docker
 
-1. Receber upload do arquivo PDF.
-2. Validar arquivo (tipo e limites definidos).
-3. Extrair conteúdo e converter para Markdown base.
-4. Aplicar modo selecionado (`faithful` ou `optimized`).
-5. Calcular contagem estimada de tokens (antes/depois, quando aplicável).
-6. Retornar arquivo `.md` para download.
-
-## 7. Modos `faithful` e `optimized`
-
-### `faithful`
-
-Conversão fiel ao documento original, priorizando preservação de conteúdo e estrutura lógica.
-
-### `optimized`
-
-Conversão com limpeza de ruídos e remoção de elementos redundantes para facilitar consumo por IA, sem resumir ou alterar informações relevantes.
-
-> Importante: conversão para Markdown não garante, por si só, economia de tokens. A economia deve ser mensurada e exibida de forma transparente.
-
-## 8. Requisitos de instalação
-
-Requisitos planejados para desenvolvimento local:
-
-- Python 3.12+
-- pip
-- Docker (opcional para execução conteinerizada)
-
-## 9. Configuração do ambiente de desenvolvimento
-
-Exemplo planejado de setup local:
+Na pasta `SaveToken-api`:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate  # Linux/macOS
-# .venv\Scripts\activate   # Windows
-
-pip install -r requirements.txt
+docker build -t savetoken-api .
+docker run --rm -p 8000:8000 savetoken-api
 ```
 
-Configurar variáveis de ambiente a partir de `.env.example` quando o arquivo estiver disponível no projeto.
+A API ficará disponível em `http://localhost:8000` e o Swagger em `http://localhost:8000/docs`.
 
-## 10. Exemplo planejado de utilização da API
+## Configuração
 
-Endpoint principal planejado:
+As configurações podem ser definidas por variáveis de ambiente:
 
-- `POST /api/v1/conversions`
+| Variável | Padrão | Finalidade |
+|---|---:|---|
+| `MAX_PDF_SIZE_MB` | `10` | Tamanho máximo do PDF |
+| `MAX_PDF_PAGES` | `1000` | Número máximo de páginas |
+| `MAX_CONCURRENT_CONVERSIONS` | `1` | Conversões pesadas simultâneas por instância |
+| `TOKENIZER_ENCODING` | `cl100k_base` | Encoding usado na estimativa |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://127.0.0.1:3000` | Origens explícitas separadas por vírgula |
 
-Entrada esperada:
+Os PDFs não são armazenados permanentemente pela aplicação. O nome enviado pelo cliente é usado apenas como nome de download, depois de sanitizado; não é usado para criar caminhos no servidor.
 
-- `file`: arquivo PDF
-- `mode`: `faithful` ou `optimized`
+## Endpoint
 
-Saída esperada:
+### `POST /api/v1/conversions`
 
-- Arquivo Markdown (`.md`)
+Envia um formulário `multipart/form-data` com:
 
-Exemplo de chamada (planejado):
+- `pdf`: arquivo PDF obrigatório;
+- `mode`: `faithful` ou `optimized`, opcional, padrão `faithful`.
+
+Exemplo:
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/conversions" \
-  -F "file=@documento.pdf" \
-  -F "mode=faithful" \
+  -F "pdf=@documento.pdf" \
+  -F "mode=optimized" \
   -o resultado.md
 ```
 
-### Erros previstos (alto nível)
+A resposta é o arquivo Markdown com `Content-Type: text/markdown` e `Content-Disposition: attachment`. Métricas são disponibilizadas nos cabeçalhos `X-SaveToken-*`, incluindo tokenizer, tokens antes/depois, diferença e percentual de redução.
 
-Como os contratos formais ainda não foram definidos, os erros abaixo representam categorias esperadas:
+`POST /convert` permanece disponível temporariamente como rota de compatibilidade, mas `/api/v1/conversions` é a rota canônica.
 
-- Erros de validação de entrada (arquivo ausente, formato inválido, modo inválido, limite excedido).
-- Erros de processamento/conversão (falhas ao ler PDF ou ao gerar Markdown).
-- Erros internos inesperados.
+## Fluxo
 
-## 11. Roadmap do MVP
+```text
+Upload → validação → Docling → Markdown fiel → otimização opcional
+       → candidatos seguros → contagem de tokens → download .md
+```
 
-- [ ] Estruturar backend FastAPI.
-- [ ] Implementar endpoint de conversão (`/api/v1/conversions`).
-- [ ] Implementar modo `faithful`.
-- [ ] Implementar modo `optimized`.
-- [ ] Implementar contagem estimada de tokens.
-- [ ] Definir limites e estratégia de tratamento de erros.
-- [ ] Adicionar testes automatizados prioritários.
-- [ ] Preparar imagem Docker para execução.
-- [ ] Publicar primeira versão do backend.
+A validação verifica nome, extensão, MIME informado, assinatura `%PDF-`, tamanho real, integridade básica, criptografia e quantidade de páginas. O MIME é tratado como informação fornecida pelo cliente, por isso a assinatura e o parsing com pypdf também são necessários.
 
-## 12. Testes e critérios de qualidade
+No modo `optimized`, o Docling é executado uma única vez. O Markdown fiel é exportado e, quando a versão instalada oferece suporte, uma segunda representação é obtida do mesmo documento com `compact_tables=True`. A normalização preserva blocos de código, fórmulas, HTML, código indentado e quebras de linha explícitas. Candidatos são comparados por uma impressão digital dos caracteres não brancos e selecionados pelo menor número de tokens.
 
-Critérios planejados:
+As métricas usam `tiktoken` com o encoding configurado (`cl100k_base` por padrão). A economia varia conforme o documento e o encoding e não representa uma contagem universal para todos os modelos.
 
-- Testes com `pytest` para serviços e rotas críticas.
-- Validação de cenários de erro (arquivo inválido, limites excedidos, falhas de conversão).
-- Verificação da preservação estrutural em documentos jurídicos e acadêmicos.
-- Avaliação transparente da estimativa de tokens no fluxo de conversão.
+O `DocumentConverter.convert()` é síncrono e potencialmente pesado. Ele é executado em thread pool e limitado inicialmente a uma conversão simultânea por instância. Esse limite em memória não coordena múltiplos workers ou réplicas.
 
-## 13. Segurança e privacidade dos documentos
+## Testes
 
-Diretrizes iniciais:
+Com Docker, os testes podem ser executados montando o repositório e usando a imagem de desenvolvimento, ou localmente com Python 3.12:
 
-- Processar apenas os arquivos enviados para conversão.
-- Limitar tamanho de upload e volume de processamento no MVP.
-- Evitar retenção desnecessária de arquivos.
-- Evoluir políticas de privacidade e retenção conforme o projeto amadurecer.
+```bash
+python -m venv .venv
+source .venv/bin/activate       # Linux/macOS
+.venv\Scripts\activate          # Windows PowerShell
+pip install -r requirements.txt
+pytest -q
+```
 
-Limites iniciais propostos (provisórios):
+Os testes unitários usam mocks para o Docling quando possível. O teste de integração com o Docling real deve ser executado em um ambiente que tenha todas as dependências instaladas; ele não deve depender de serviços externos de IA.
 
-- Até 10 MB por PDF.
-- Até 1.000 páginas por arquivo (sujeito a testes de desempenho).
-- Processamento sequencial inicialmente.
-- OCR fora do escopo do primeiro MVP.
+## Limitações conhecidas
 
-## 14. Contribuições
+- OCR não é garantido para PDFs sem texto selecionável.
+- A contagem de tokens depende do encoding configurado e não é universal para todos os modelos.
+- A contagem compara o Markdown fiel com o Markdown final; não mede diretamente o tamanho do PDF original.
+- O Docling pode baixar modelos ou recursos conforme a versão e o formato processado. Esse comportamento deve ser observado no primeiro build e considerado no deploy.
+- Limites de memória, CPU, timeout e tamanho de requisição do proxy devem ser configurados também na infraestrutura.
 
-Contribuições serão bem-vindas após a publicação da base inicial do backend. Diretrizes formais de contribuição (ex.: `CONTRIBUTING.md`) serão adicionadas em etapas futuras.
+## Privacidade e segurança
 
-## 15. Licenciamento
-
-**A definir.**
+O MVP não envia documentos para serviços externos de IA e não registra o conteúdo integral dos arquivos. Em produção, use CORS com origens explícitas, limites de proxy e políticas de retenção compatíveis com os documentos processados.
